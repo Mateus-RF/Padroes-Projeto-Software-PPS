@@ -1,68 +1,22 @@
 package ex_adapter;
 
-import org.w3c.dom.*;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.util.*;
-import org.json.JSONArray;
 import org.json.JSONObject;
-
+import org.json.XML;
 
 public class AdapterXMLParaJSON implements LeitorDeDados {
 
-    private final LeitorXMLExistente leitorXML;
+    private final LeitorDeDadosXML leitorXML;
 
-    public AdapterXMLParaJSON(LeitorXMLExistente leitorXML) {
+    public AdapterXMLParaJSON(LeitorDeDadosXML leitorXML) {
         this.leitorXML = leitorXML;
     }
 
     @Override
-    public String lerDados() {
-        String xml = leitorXML.buscarXML();
-        try {
-            Document doc = DocumentBuilderFactory.newInstance()
-                    .newDocumentBuilder()
-                    .parse(new org.xml.sax.InputSource(new java.io.StringReader(xml)));
+    public String buscarDados() {
+        String xml = leitorXML.buscarDadosXML();
 
-            doc.getDocumentElement().normalize();
+        JSONObject json = XML.toJSONObject(xml); 
 
-            Node raiz = doc.getDocumentElement();
-
-            JSONObject json = new JSONObject();
-            json.put(raiz.getNodeName(), processarElemento(raiz));
-
-            return json.toString(4);
-        } catch (Exception e) {
-            return "{}";
-        }
-    }
-
-    private Object processarElemento(Node node) {
-        NodeList filhos = node.getChildNodes();
-        Map<String, Object> mapa = new LinkedHashMap<>();
-        Map<String, List<Object>> listas = new LinkedHashMap<>();
-
-        for (int i = 0; i < filhos.getLength(); i++) {
-            Node filho = filhos.item(i);
-            if (filho.getNodeType() == Node.ELEMENT_NODE) {
-                Object valor = processarElemento(filho);
-                String nome = filho.getNodeName();
-                listas.putIfAbsent(nome, new ArrayList<>());
-                listas.get(nome).add(valor);
-            }
-        }
-
-        if (listas.isEmpty()) {
-            return node.getTextContent();
-        }
-
-        for (String chave : listas.keySet()) {
-            if (listas.get(chave).size() == 1) {
-                mapa.put(chave, listas.get(chave).get(0));
-            } else {
-                mapa.put(chave, new JSONArray(listas.get(chave)));
-            }
-        }
-
-        return mapa;
+        return json.toString(4);
     }
 }
